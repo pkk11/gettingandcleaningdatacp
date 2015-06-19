@@ -1,5 +1,4 @@
-# This repository includes the Course Project for the Coursera course "Getting and Cleaning Data"
-## The course is part of the Johns Hopkins Data Science Specialization 
+# Course Project for "Getting and Cleaning Data"
 
 ##### For the project data, accelerometer and gyroscope data was obtained from a Samsung smartphone for 30 different subjects engaging in six different bodily motion activities.  The data was randomly partitioned into two data sets.  More information about the data is available here:  http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
 
