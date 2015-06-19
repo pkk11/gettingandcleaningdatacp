@@ -1,11 +1,15 @@
 run_analysis <- function() {
      
+     library(dplyr)
+     library(reshape2)
+     
      ## goes into the dataset folder, retrieves data and returns to working directory
+     ## I have included the variable names as columns in this step, using col.names and features.txt
      
      setwd("UCI HAR Dataset")
      
      feature.names <- read.table("features.txt")
-          
+     
      test.subject <- read.table("test/subject_test.txt", col.names="Subject")
      test.data <- read.table("test/X_test.txt", col.names=feature.names[,2])
      test.activity <- read.table("test/y_test.txt", col.names="Activity")
@@ -24,113 +28,49 @@ run_analysis <- function() {
      train.data <- cbind(train.subject, train.activity, train.data)
      all.data <- rbind(test.data, train.data)
      
-     ## extract only mean and standard deviation
+     ## extracts only mean and standard deviation variables
      
-     ## this is the manual method
-     meanandstd = c(1:8, 43:48, 83:88, 123:128, 163:168, 203:204, 216:217, 229:230, 
-                   242:243, 255:256, 268:273, 347:352, 426:431, 505:506, 518:519,
-                   531:532, 544:545)
+     ## this is the manual method, which seems sound but could be error-prone
+#           meanandstd = c(1:8, 43:48, 83:88, 123:128, 163:168, 203:204, 216:217, 229:230, 
+#                         242:243, 255:256, 268:273, 347:352, 426:431, 505:506, 518:519,
+#                         531:532, 544:545)
+#           meanandstd.data <- all.data[, meanandstd]
 
-     ## this is the grep method
-#      meanfeatures <- grep("mean", feature.names[,2])
-#      stdfeatures <- grep("std", feature.names[,2])
-#      meanandstd <- c(meanfeatures,stdfeatures)
+     ##this uses the select function of dplyr, to select for the true mean/std variables (66 total)
 
-     ##for both methods, this selects the data
-     meanandstd.data <- all.data[, meanandstd]
+     all.data <- select(all.data, -contains("meanFreq")) #removes meanFreq variables
+     meanandstd.data <- select(all.data, Subject, Activity, contains("mean", ignore.case=F), contains("std"))
      
      ## adds labels for the six activities, and turns the subject and activity columns to factors
-
+     
      activities <- activities.table[,2]
      
      meanandstd.data[,1] <- factor(meanandstd.data[,1])
      meanandstd.data[,2] <- factor(meanandstd.data[,2], levels=c(1:6), labels=activities)
 
-     ## improves variable names
+     ## this method gets mean of variables by tapply/factors and puts them in a list by variable
+     ## but turning the list to a simple tidy dataset seems a bit tricky....
+
+#      answer <- list()
+#      
+#      for (variable in variables) {
+#           answer[[variable]] <- tapply(meanandstd.data[[variable]], 
+#                                        INDEX=list(meanandstd.data$Subject, meanandstd.data$Activity), mean)
+#      }
+# 
+
+     ## this method uses melt and dcast to arrive at a tidy dataset
+
+     columns <- colnames(meanandstd.data)
+     ids <- columns[c(1,2)]
+     variables <- columns[-c(1,2)]
      
-     colnames(meanandstd.data) <- c("Subject", "Activity",
-                                    "Body Acceleration - Mean - X axis",
-                                    "Body Acceleration - Mean - Y axis",
-                                    "Body Acceleration - Mean - Z axis", 
-                                    "Body Acceleration - Standard Deviation - X axis",
-                                    "Body Acceleration - Standard Deviation - Y axis",
-                                    "Body Acceleration - Standard Deviation - Z axis", 
-                                    "Gravity Acceleration - Mean - X axis",
-                                    "Gravity Acceleration - Mean - Y axis",
-                                    "Gravity Acceleration - Mean - Z axis", 
-                                    "Gravity Acceleration - Standard Deviation - X axis",
-                                    "Gravity Acceleration - Standard Deviation - Y axis",
-                                    "Gravity Acceleration - Standard Deviation - Z axis",
-                                    "Body Acceleration Jerk - Mean - X axis", 
-                                    "Body Acceleration Jerk - Mean - Y axis",
-                                    "Body Acceleration Jerk - Mean - Z axis",
-                                    "Body Acceleration Jerk - Standard Deviation - X axis", 
-                                    "Body Acceleration Jerk - Standard Deviation - Y axis",
-                                    "Body Acceleration Jerk - Standard Deviation - Z axis",
-                                    "Body Gyroscope - Mean - X axis", 
-                                    "Body Gyroscope - Mean - Y axis",
-                                    "Body Gyroscope - Mean - Z axis",
-                                    "Body Gyroscope - Standard Deviation - X axis",
-                                    "Body Gyroscope - Standard Deviation - Y axis", 
-                                    "Body Gyroscope - Standard Deviation - Z axis",
-                                    "Body Gyroscope Jerk - Mean - X axis",
-                                    "Body Gyroscope Jerk - Mean - Y axis", 
-                                    "Body Gyroscope Jerk - Mean - Z axis",
-                                    "Body Gyroscope Jerk - Standard Deviation - X axis",
-                                    "Body Gyroscope Jerk - Standard Deviation - Y axis", 
-                                    "Body Gyroscope Jerk - Standard Deviation - Z axis",
-                                    "Body Acceleration Magnitude - Mean",
-                                    "Body Acceleration Magnitude - Standard Deviation",
-                                    "Gravity Acceleration Magnitude - Mean",
-                                    "Gravity Acceleration Magnitude - Standard Deviation",
-                                    "Body Acceleration Jerk Magnitude - Mean",
-                                    "Body Acceleration Jerk Magnitude - Standard Deviation",
-                                    "Body Gyroscope Magnitude - Mean",
-                                    "Body Gyroscope Magnitude - Standard Deviation",
-                                    "Body Gyroscope Jerk Magnitude - Mean",
-                                    "Body Gyroscope Jerk Magnitude - Standard Deviation",
-                                    "Body Acceleration (frequency) - Mean - X axis",
-                                    "Body Acceleration (frequency) - Mean - Y axis",
-                                    "Body Acceleration (frequency) - Mean - Z axis", 
-                                    "Body Acceleration (frequency) - Standard Deviation - X axis",
-                                    "Body Acceleration (frequency) - Standard Deviation - Y axis",
-                                    "Body Acceleration (frequency) - Standard Deviation - Z axis", 
-                                    "Body Acceleration Jerk (frequency) - Mean - X axis",
-                                    "Body Acceleration Jerk (frequency) - Mean - Y axis",
-                                    "Body Acceleration Jerk (frequency) - Mean - Z axis", 
-                                    "Body Acceleration Jerk (frequency) - Standard Deviation - X axis",
-                                    "Body Acceleration Jerk (frequency) - Standard Deviation - Y axis",
-                                    "Body Acceleration Jerk (frequency) - Standard Deviation - Z axis", 
-                                    "Body Gyroscope (frequency) - Mean - X axis", 
-                                    "Body Gyroscope (frequency) - Mean - Y axis",
-                                    "Body Gyroscope (frequency) - Mean - Z axis",
-                                    "Body Gyroscope (frequency) - Standard Deviation - X axis",
-                                    "Body Gyroscope (frequency) - Standard Deviation - Y axis", 
-                                    "Body Gyroscope (frequency) - Standard Deviation - Z axis",
-                                    "Body Acceleration Magnitude (frequency) - Mean",
-                                    "Body Acceleration Magnitude (frequency) - Standard Deviation",
-                                    "Body Acceleration Jerk Magnitude (frequency) - Mean",
-                                    "Body Acceleration Jerk Magnitude (frequency) - Standard Deviation",
-                                    "Body Gyroscope Magnitude (frequency) - Mean",
-                                    "Body Gyroscope Magnitude (frequency) - Standard Deviation",
-                                    "Body Gyroscope Jerk Magnitude (frequency) - Mean",
-                                    "Body Gyroscope Jerk Magnitude (frequency) - Standard Deviation"
-                                   )
+     datamelt <- melt(meanandstd.data, id=ids, measure.vars=variables)
 
-     ## gets mean of variables by tapply/factors and puts them in a list by variable
+     answer <- dcast(datamelt, Subject + Activity ~ variable, mean)
 
-     variables <- colnames(meanandstd.data)
-     variables <- variables[-c(1,2)]
-
-     answer <- list()
-
-     for (variable in variables) {
-          answer[[variable]] <- tapply(meanandstd.data[[variable]], 
-                              INDEX=list(meanandstd.data$Subject, meanandstd.data$Activity), mean)
-     }
-
-     ## prints answer
-
+     ## writes answer
+     
      write.table(answer, file = "tidydata.txt", row.names = F)
      
 }
